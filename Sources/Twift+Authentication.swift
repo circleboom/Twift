@@ -171,6 +171,7 @@ extension Twift.Authentication {
   public func authenticateUser(clientId: String,
                                redirectUri: URL,
                                scope: Set<OAuth2Scope>,
+                               clientSecret: String = "",
                                presentationContextProvider: ASWebAuthenticationPresentationContextProviding? = nil
   ) async throws -> OAuth2User {
     let state = UUID().uuidString
