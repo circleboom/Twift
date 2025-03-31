@@ -149,6 +149,7 @@ extension Twift.Authentication {
   public func authenticateUser(clientId: String,
                                redirectUri: URL,
                                scope: Set<OAuth2Scope>,
+                               clientSecret: String = "",
                                presentationContextProvider: ASWebAuthenticationPresentationContextProviding? = nil
   ) async -> (OAuth2User?, Error?) {
     do {
@@ -234,6 +235,11 @@ extension Twift.Authentication {
     let encodedBody = OAuthHelper.httpBody(forFormParameters: body)
     
     codeRequest.setValue("application/x-www-form-urlencoded", forHTTPHeaderField: "Content-Type")
+     let credentials = "\(clientId):\(clientSecret)"
+      if let credentialsData = credentials.data(using: .utf8) {
+          let base64Credentials = credentialsData.base64EncodedString()
+          codeRequest.setValue("Basic \(base64Credentials)", forHTTPHeaderField: "Authorization")
+      }
     codeRequest.httpMethod = "POST"
     codeRequest.httpBody = encodedBody
     
@@ -381,6 +387,8 @@ public enum OAuth2Scope: String, CaseIterable, RawRepresentable {
   
   /// Bookmark and remove Bookmarks from Tweets
   case bookmarkWrite = "bookmark.write"
+
+  case mediaWrite = "media.write"
   
   /// All write-permission scopes.
   static var allWriteScopes: Set<OAuth2Scope> {
