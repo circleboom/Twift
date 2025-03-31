@@ -153,7 +153,7 @@ extension Twift.Authentication {
                                presentationContextProvider: ASWebAuthenticationPresentationContextProviding? = nil
   ) async -> (OAuth2User?, Error?) {
     do {
-      let oauthUser: OAuth2User = try await authenticateUser(clientId: clientId, redirectUri: redirectUri, scope: scope, presentationContextProvider: presentationContextProvider)
+      let oauthUser: OAuth2User = try await authenticateUser(clientId: clientId, redirectUri: redirectUri, scope: scope, clientSecret: clientSecret, presentationContextProvider: presentationContextProvider)
       return (oauthUser, nil)
     } catch {
       return (nil, error)
