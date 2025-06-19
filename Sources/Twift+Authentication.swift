@@ -184,6 +184,7 @@ extension Twift.Authentication {
       URLQueryItem(name: "state", value: state),
       URLQueryItem(name: "code_challenge", value: "challenge"),
       URLQueryItem(name: "code_challenge_method", value: "plain"),
+      URLQueryItem(name: "prompt", value: "login")
     ]
     
     var authUrl = URLComponents()
