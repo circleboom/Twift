@@ -392,13 +392,16 @@ public enum OAuth2Scope: String, CaseIterable, RawRepresentable {
 
   case mediaWrite = "media.write"
   
+  case dmRead = "dm.read"
+  
+  case dmWrite = "dm.write"
   /// All write-permission scopes.
   static var allWriteScopes: Set<OAuth2Scope> {
-    [.likeWrite, .listWrite, .muteWrite, .blockWrite, .tweetWrite, .followsWrite, .bookmarkWrite, .tweetModerateWrite]
+    [.likeWrite, .listWrite, .muteWrite, .blockWrite, .tweetWrite, .followsWrite, .bookmarkWrite, .tweetModerateWrite, .dmWrite]
   }
   
   /// All read-permission scopes.
   static var allReadScopes: Set<OAuth2Scope> {
-    [.likeRead, .listRead, .muteRead, .blockRead, .spaceRead, .tweetRead, .usersRead, .followsRead, .bookmarkRead]
+    [.likeRead, .listRead, .muteRead, .blockRead, .spaceRead, .tweetRead, .usersRead, .followsRead, .bookmarkRead, .dmRead]
   }
 }
