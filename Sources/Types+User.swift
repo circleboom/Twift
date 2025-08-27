@@ -36,6 +36,8 @@ public struct User: Codable, Identifiable {
   
   /// Indicates if this user is a verified Twitter User.
   public let verified: Bool?
+
+  public let verified_type: String?
   
   /// Contains details about text that has a special meaning in the user's description.
   public let entities: Entities?
@@ -81,6 +83,8 @@ extension User {
     
     /// The number of lists of which this user is a member
     public let listedCount: Int
+
+    public let tweetCount: Int
   }
   
   /// Contains details about text that has a special meaning in the user's description
@@ -145,6 +149,7 @@ extension User: Fielded {
     case \.publicMetrics: return "public_metrics"
     case \.url: return "url"
     case \.verified: return "verified"
+    case \.verified_type: return "verified_type"
     case \.withheld: return "withheld"
       
     default: return nil

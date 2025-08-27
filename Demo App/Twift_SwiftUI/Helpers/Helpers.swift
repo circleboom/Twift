@@ -22,5 +22,6 @@ let allUserFields: Set<Twift.User.Field> = [
    \.publicMetrics,
    \.url,
    \.verified,
+   \.verified_type,
    \.withheld
 ]
