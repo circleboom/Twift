@@ -220,6 +220,22 @@ extension Twift {
     }
     
     public func presentationAnchor(for session: ASWebAuthenticationSession) -> ASPresentationAnchor {
+      #if canImport(UIKit)
+      // Prefer the active foreground window scene's key window
+      if let windowScene = UIApplication.shared.connectedScenes
+        .compactMap({ $0 as? UIWindowScene })
+        .first(where: { $0.activationState == .foregroundActive }),
+         let keyWindow = windowScene.windows.first(where: { $0.isKeyWindow }) {
+        return keyWindow
+      }
+      // Fallback: any window if keyWindow isn't available yet
+      if let anyWindow = UIApplication.shared.connectedScenes
+        .compactMap({ $0 as? UIWindowScene })
+        .flatMap({ $0.windows })
+        .first {
+        return anyWindow
+      }
+      #endif
       return ASPresentationAnchor()
     }
   }
