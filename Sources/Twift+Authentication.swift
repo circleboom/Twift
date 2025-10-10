@@ -173,8 +173,6 @@ extension Twift {
           if let error = error {
             return completion((nil, error))
           }
-          
-          authSession.prefersEphemeralWebBrowserSession = true
           if let url = url {
             guard let queryItems = url.query?.urlQueryStringParameters,
                   let oauthToken = queryItems["oauth_token"],
@@ -207,6 +205,9 @@ extension Twift {
               }
             }.resume()
           }
+        }
+        if #available(iOS 13.0, *) {
+          authSession.prefersEphemeralWebBrowserSession = false
         }
         
         DispatchQueue.main.async {
@@ -294,7 +295,9 @@ extension Twift.Authentication {
         }
         return continuation.resume(throwing: TwiftError.UnknownError("There was a problem authenticating the user: no URL was returned from the first authentication step."))
       }
-      
+      if #available(iOS 13.0, *) {
+        authSession.prefersEphemeralWebBrowserSession = false
+      }
       authSession.presentationContextProvider = presentationContextProvider ?? self
       authSession.start()
     }
