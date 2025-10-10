@@ -8,10 +8,11 @@ extension Twift {
 }
 
 // MARK: - X App Deeplink Helpers (non-auth flows)
-// NOTE: Add "twitter" to LSApplicationQueriesSchemes in your Info.plist to allow canOpenURL checks:
+// NOTE: Add URL schemes to LSApplicationQueriesSchemes in your Info.plist to allow canOpenURL checks:
 // <key>LSApplicationQueriesSchemes</key>
 // <array>
 //   <string>twitter</string>
+//   <string>x</string>
 // </array>
 extension Twift.Authentication {
   /// Attempts to open a given X/Twitter URL in the native app. Falls back to SFSafariViewController if the app isn't available.
@@ -21,22 +22,32 @@ extension Twift.Authentication {
   ///   - https://twitter.com/... (same handling)
   @MainActor
   public static func openInXAppOrBrowser(_ url: URL, from presenter: UIViewController) {
+    // 1) Try native app via custom scheme mapping
     if let appURL = mapToTwitterAppURL(from: url), UIApplication.shared.canOpenURL(appURL) {
       UIApplication.shared.open(appURL, options: [:], completionHandler: nil)
       return
     }
-    // Fallback to SafariViewController (shares Safari cookies)
-    let safari = SFSafariViewController(url: url)
-    presenter.present(safari, animated: true)
+    // 2) Try Universal Link handoff to X app (if installed & user allows)
+    UIApplication.shared.open(url, options: [:]) { success in
+      if success { return }
+      // 3) Fallback: in-app Safari View Controller
+      let safari = SFSafariViewController(url: url)
+      presenter.present(safari, animated: true)
+    }
   }
 
   /// Opens a user profile in the X app if possible, otherwise in SafariViewController.
   @MainActor
   public static func openXProfile(screenName: String, from presenter: UIViewController) {
-    let appURL = URL(string: "twitter://user?screen_name=\(screenName)")!
-    if UIApplication.shared.canOpenURL(appURL) {
-      UIApplication.shared.open(appURL, options: [:], completionHandler: nil)
-    } else if let webURL = URL(string: "https://x.com/\(screenName)") {
+    let schemeURL = URL(string: "twitter://user?screen_name=\(screenName)")!
+    if UIApplication.shared.canOpenURL(schemeURL) {
+      UIApplication.shared.open(schemeURL, options: [:], completionHandler: nil)
+      return
+    }
+    // Universal Link attempt
+    guard let webURL = URL(string: "https://x.com/\(screenName)") else { return }
+    UIApplication.shared.open(webURL, options: [:]) { success in
+      if success { return }
       let safari = SFSafariViewController(url: webURL)
       presenter.present(safari, animated: true)
     }
@@ -45,10 +56,15 @@ extension Twift.Authentication {
   /// Opens a tweet in the X app if possible, otherwise in SafariViewController.
   @MainActor
   public static func openXTweet(id: String, from presenter: UIViewController) {
-    let appURL = URL(string: "twitter://status?id=\(id)")!
-    if UIApplication.shared.canOpenURL(appURL) {
-      UIApplication.shared.open(appURL, options: [:], completionHandler: nil)
-    } else if let webURL = URL(string: "https://x.com/i/web/status/\(id)") {
+    let schemeURL = URL(string: "twitter://status?id=\(id)")!
+    if UIApplication.shared.canOpenURL(schemeURL) {
+      UIApplication.shared.open(schemeURL, options: [:], completionHandler: nil)
+      return
+    }
+    // Universal Link attempt (x.com/i/web/status/{id} typically resolves to app)
+    guard let webURL = URL(string: "https://x.com/i/web/status/\(id)") else { return }
+    UIApplication.shared.open(webURL, options: [:]) { success in
+      if success { return }
       let safari = SFSafariViewController(url: webURL)
       presenter.present(safari, animated: true)
     }
@@ -60,7 +76,12 @@ extension Twift.Authentication {
     let encoded = initialText.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? initialText
     if let appURL = URL(string: "twitter://post?message=\(encoded)"), UIApplication.shared.canOpenURL(appURL) {
       UIApplication.shared.open(appURL, options: [:], completionHandler: nil)
-    } else if let webURL = URL(string: "https://x.com/intent/tweet?text=\(encoded)") {
+      return
+    }
+    // Universal Link to web intent (will handoff to app if allowed)
+    guard let webURL = URL(string: "https://x.com/intent/tweet?text=\(encoded)") else { return }
+    UIApplication.shared.open(webURL, options: [:]) { success in
+      if success { return }
       let safari = SFSafariViewController(url: webURL)
       presenter.present(safari, animated: true)
     }
