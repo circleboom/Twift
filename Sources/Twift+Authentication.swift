@@ -1,8 +1,95 @@
 import Foundation
 import AuthenticationServices
+import UIKit
+import SafariServices
 
 extension Twift {
   // MARK: Authentication methods
+}
+
+// MARK: - X App Deeplink Helpers (non-auth flows)
+// NOTE: Add "twitter" to LSApplicationQueriesSchemes in your Info.plist to allow canOpenURL checks:
+// <key>LSApplicationQueriesSchemes</key>
+// <array>
+//   <string>twitter</string>
+// </array>
+extension Twift.Authentication {
+  /// Attempts to open a given X/Twitter URL in the native app. Falls back to SFSafariViewController if the app isn't available.
+  /// Supported examples:
+  ///   - https://x.com/someuser → twitter://user?screen_name=someuser
+  ///   - https://x.com/someuser/status/123 → twitter://status?id=123
+  ///   - https://twitter.com/... (same handling)
+  @MainActor
+  public static func openInXAppOrBrowser(_ url: URL, from presenter: UIViewController) {
+    if let appURL = mapToTwitterAppURL(from: url), UIApplication.shared.canOpenURL(appURL) {
+      UIApplication.shared.open(appURL, options: [:], completionHandler: nil)
+      return
+    }
+    // Fallback to SafariViewController (shares Safari cookies)
+    let safari = SFSafariViewController(url: url)
+    presenter.present(safari, animated: true)
+  }
+
+  /// Opens a user profile in the X app if possible, otherwise in SafariViewController.
+  @MainActor
+  public static func openXProfile(screenName: String, from presenter: UIViewController) {
+    let appURL = URL(string: "twitter://user?screen_name=\(screenName)")!
+    if UIApplication.shared.canOpenURL(appURL) {
+      UIApplication.shared.open(appURL, options: [:], completionHandler: nil)
+    } else if let webURL = URL(string: "https://x.com/\(screenName)") {
+      let safari = SFSafariViewController(url: webURL)
+      presenter.present(safari, animated: true)
+    }
+  }
+
+  /// Opens a tweet in the X app if possible, otherwise in SafariViewController.
+  @MainActor
+  public static func openXTweet(id: String, from presenter: UIViewController) {
+    let appURL = URL(string: "twitter://status?id=\(id)")!
+    if UIApplication.shared.canOpenURL(appURL) {
+      UIApplication.shared.open(appURL, options: [:], completionHandler: nil)
+    } else if let webURL = URL(string: "https://x.com/i/web/status/\(id)") {
+      let safari = SFSafariViewController(url: webURL)
+      presenter.present(safari, animated: true)
+    }
+  }
+
+  /// Opens the compose sheet in the X app if available, otherwise falls back to the web compose URL.
+  @MainActor
+  public static func composeOnX(initialText: String, from presenter: UIViewController) {
+    let encoded = initialText.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? initialText
+    if let appURL = URL(string: "twitter://post?message=\(encoded)"), UIApplication.shared.canOpenURL(appURL) {
+      UIApplication.shared.open(appURL, options: [:], completionHandler: nil)
+    } else if let webURL = URL(string: "https://x.com/intent/tweet?text=\(encoded)") {
+      let safari = SFSafariViewController(url: webURL)
+      presenter.present(safari, animated: true)
+    }
+  }
+
+  /// Maps a standard x.com/twitter.com URL to an app deeplink if possible.
+  private static func mapToTwitterAppURL(from url: URL) -> URL? {
+    guard let host = url.host?.lowercased() else { return nil }
+    let isTwitterHost = host.contains("twitter.com") || host == "x.com"
+    guard isTwitterHost else { return nil }
+
+    // Parse common patterns
+    let path = url.path.trimmingCharacters(in: CharacterSet(charactersIn: "/"))
+    let components = path.split(separator: "/").map(String.init)
+
+    // /{screen_name}
+    if components.count == 1, let screen = components.first, !screen.isEmpty {
+      return URL(string: "twitter://user?screen_name=\(screen)")
+    }
+
+    // /{screen_name}/status/{id}
+    if components.count >= 3, components[1] == "status" {
+      let id = components[2]
+      return URL(string: "twitter://status?id=\(id)")
+    }
+
+    // Fallback: return nil to use browser
+    return nil
+  }
 }
 
 extension Twift {
@@ -83,13 +170,11 @@ extension Twift {
         }
         
         let authSession = ASWebAuthenticationSession(url: authURL, callbackURLScheme: callbackURLScheme) { (url, error) in
-          if #available(iOS 13.0, *) {
-            authSession.prefersEphemeralWebBrowserSession = false
-          }
           if let error = error {
             return completion((nil, error))
           }
           
+          authSession.prefersEphemeralWebBrowserSession = true
           if let url = url {
             guard let queryItems = url.query?.urlQueryStringParameters,
                   let oauthToken = queryItems["oauth_token"],
@@ -201,9 +286,6 @@ extension Twift.Authentication {
       }
 
       let authSession = ASWebAuthenticationSession(url: authUrl, callbackURLScheme: redirectUri.scheme) { (url, error) in
-        if #available(iOS 13.0, *) {
-          authSession.prefersEphemeralWebBrowserSession = false
-        }
         if let error = error {
           return continuation.resume(throwing: error)
         }
@@ -362,7 +444,7 @@ public enum OAuth2Scope: String, CaseIterable, RawRepresentable {
   /// Stay connected to your account until you revoke access.
   case offlineAccess = "offline.access"
   
-  /// All the Spaces you can  .
+  /// All the Spaces you can view.
   case spaceRead = "space.read"
   
   /// Accounts you’ve muted.
