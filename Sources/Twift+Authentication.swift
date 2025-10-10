@@ -83,6 +83,9 @@ extension Twift {
         }
         
         let authSession = ASWebAuthenticationSession(url: authURL, callbackURLScheme: callbackURLScheme) { (url, error) in
+          if #available(iOS 13.0, *) {
+            authSession.prefersEphemeralWebBrowserSession = false
+          }
           if let error = error {
             return completion((nil, error))
           }
@@ -198,6 +201,9 @@ extension Twift.Authentication {
       }
 
       let authSession = ASWebAuthenticationSession(url: authUrl, callbackURLScheme: redirectUri.scheme) { (url, error) in
+        if #available(iOS 13.0, *) {
+          authSession.prefersEphemeralWebBrowserSession = false
+        }
         if let error = error {
           return continuation.resume(throwing: error)
         }
@@ -356,7 +362,7 @@ public enum OAuth2Scope: String, CaseIterable, RawRepresentable {
   /// Stay connected to your account until you revoke access.
   case offlineAccess = "offline.access"
   
-  /// All the Spaces you can view.
+  /// All the Spaces you can  .
   case spaceRead = "space.read"
   
   /// Accounts you’ve muted.
