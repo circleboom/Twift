@@ -53,7 +53,7 @@ extension Twift {
       with completion: @escaping ((userCredentials: OAuthCredentials?, error: Error?)) -> Void
     ) {
       // MARK:  Step one: Obtain a request token
-      var stepOneRequest = URLRequest(url: URL(string: "twitterauth://api.twitter.com/oauth/request_token")!)
+      var stepOneRequest = URLRequest(url: URL(string: "https://api.twitter.com/oauth/request_token")!)
       
       stepOneRequest.oAuthSign(
         method: "POST",
@@ -76,7 +76,7 @@ extension Twift {
         oauthToken = token
         
         // MARK:  Step two: Redirecting the user
-        let authURL = URL(string: "twitterauth://oauth/authorize?oauth_token=\(oauthToken)")!
+        let authURL = URL(string: "https://api.twitter.com/oauth/authorize?oauth_token=\(oauthToken)")!
 
         guard let callbackURLScheme = callbackURL.scheme else {
           preconditionFailure("Malformed callback URL. Scheme is required.")
@@ -96,7 +96,7 @@ extension Twift {
             
             // MARK:  Step three: Converting the request token into an access token
             
-            var stepThreeRequest = URLRequest(url: URL(string: "twitterauth://oauth/access_token?oauth_verifier=\(oauthVerifier)")!)
+            var stepThreeRequest = URLRequest(url: URL(string: "https://api.twitter.com/oauth/access_token?oauth_verifier=\(oauthVerifier)")!)
             
             stepThreeRequest.oAuthSign(
               method: "POST",
